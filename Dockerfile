@@ -24,6 +24,7 @@ RUN pip install -r requirements.txt
 RUN apt-get install -y ros-$ROS_DISTRO-cv-bridge
 RUN apt-get install -y ros-$ROS_DISTRO-pcl-ros
 RUN apt-get install -y ros-$ROS_DISTRO-image-proc
+RUN apt-get install -y ros-$ROS_DISTRO-rqt-image-view
 
 # socket io
 RUN apt-get install -y netbase
@@ -32,3 +33,6 @@ RUN mkdir /capstone
 VOLUME ["/capstone"]
 VOLUME ["/root/.ros/log/"]
 WORKDIR /capstone/ros
+
+RUN echo 'source /opt/ros/${ROS_DISTRO}/setup.bash' >> /root/.bashrc
+
