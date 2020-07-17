@@ -13,6 +13,9 @@ import yaml
 from scipy.spatial import KDTree
 
 STATE_COUNT_THRESHOLD = 3
+SAVE_TRAINING_IMAGE = True
+MAX_NUM_IMG_SAVE = 10
+SAVE_LOCATION = "./light_classification/sim_img/"
 
 class TLDetector(object):
     def __init__(self):
@@ -24,6 +27,10 @@ class TLDetector(object):
         self.waypoint_tree = None
         self.camera_image = None
         self.lights = []
+        
+        # FMC temporary for saving images
+        self.num_image_saved = [0] * 3; # keep track of number of image stored for each light state
+        self.image_saver_cooldown = 0;
 
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
@@ -179,9 +186,34 @@ class TLDetector(object):
             # get state of traffic light
             state = self.get_light_state(closest_light)
             # return line waypoint index & traffic light state
+            
+            if SAVE_TRAINING_IMAGE:
+                truth_state = closest_light.state # make sure use ground truth
+                print("closest light is %d waypoints ahead with state: %d" % (diff,truth_state))
+                
+                if self.image_saver_cooldown == 0:
+                    # save image at 5 loop interval and up to X total for each state
+                    if self.num_image_saved[truth_state] < MAX_NUM_IMG_SAVE :
+                        if(self.has_image):
+                            try:
+                                cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+                            except CvBridgeError, e:
+                                print(e)
+                            else:
+                                fname = "_state_%d_image_%d.jpeg" % (truth_state,self.num_image_saved[truth_state])
+                                print("saving file "+fname)
+                                cv2.imwrite(SAVE_LOCATION+fname, cv_image)
+                                self.num_image_saved[truth_state] += 1
+                                self.image_saver_cooldown = 5
+                else:
+                    self.image_saver_cooldown -= 1
+                    self.image_saver_cooldown = max(0,self.image_saver_cooldown)
+            
             return line_wp_idx, state
 
         # else, no upcoming traffic light was found
+        
+        print("no light within 300 waypoints")
         return -1, TrafficLight.UNKNOWN
 
 if __name__ == '__main__':
