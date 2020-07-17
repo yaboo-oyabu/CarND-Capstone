@@ -11,6 +11,8 @@ import tf
 import cv2
 import yaml
 from scipy.spatial import KDTree
+import csv
+from datetime import datetime
 
 STATE_COUNT_THRESHOLD = 3
 SAVE_TRAINING_IMAGE = True
@@ -200,11 +202,22 @@ class TLDetector(object):
                             except CvBridgeError, e:
                                 print(e)
                             else:
-                                fname = "_state_%d_image_%d.jpeg" % (truth_state,self.num_image_saved[truth_state])
-                                print("saving file "+fname)
+                                (dt, micro) = datetime.utcnow().strftime('%Y%m%d%H%M%S.%f').split('.')
+                                dt = "%s%03d" % (dt, int(micro) / 1000) 
+                                                                
+                                fname = "_state_%d_image_%s.jpeg" % (truth_state,dt)
+                                
                                 cv2.imwrite(SAVE_LOCATION+fname, cv_image)
                                 self.num_image_saved[truth_state] += 1
                                 self.image_saver_cooldown = 5
+                                
+                                csv_file_name = SAVE_LOCATION+"sim_images.csv"
+                                print(csv_file_name)
+                                with open(csv_file_name,'a') as csvfile:
+                                    csv_writer = csv.writer(csvfile)
+                                    csv_writer.writerow([fname , state, diff])
+                                
+                                
                 else:
                     self.image_saver_cooldown -= 1
                     self.image_saver_cooldown = max(0,self.image_saver_cooldown)
