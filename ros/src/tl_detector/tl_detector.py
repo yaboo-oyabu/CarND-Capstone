@@ -191,6 +191,10 @@ class TLDetector(object):
             d = temp_wp_idx - car_position
             
             if d < 0 and d > -25:
+                # This flag is only used during training data collecting
+                # Often when car crosses stop line, closest_light jumps to next light far ahead
+                # But the stopline of the light we just passed several waypoints ago is still within the sight of the camera
+                # An example of conflict: ground truth says there is no light present (within 300 waypoints ahead) but camera still sees a greenlight that we just passed
                 stop_line_immediate_behind = True
             
             if d >= 0 and d < diff:
@@ -228,7 +232,7 @@ class TLDetector(object):
         This has an internal cool-down to prevent dumping same image too often
         """
         if self.num_image_saved == [MAX_NUM_IMG_SAVE]*4 :
-            print("Max amount of training image (%d)for all class achieved." % MAX_NUM_IMG_SAVE)
+            rospy.loginfo("Max amount of training image (%d)for all class achieved." % MAX_NUM_IMG_SAVE)
             return
         
         if self.image_saver_cooldown == 0:
@@ -238,7 +242,7 @@ class TLDetector(object):
                     try:
                         cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
                     except CvBridgeError, e:
-                        print(e)
+                        rospy.loginfo(e)
                     else:
                         (dt, micro) = datetime.utcnow().strftime('%Y%m%d%H%M%S.%f').split('.')
                         dt = "%s%03d" % (dt, int(micro) / 1000) 
@@ -261,13 +265,13 @@ class TLDetector(object):
                             csv_writer.writerow([fname , state_truth, dist_next_light])
                         
                         if state_truth == 3:
-                            print("New image saved: Traffic light state 3. Next light is %d waypoints ahead"
+                            rospy.loginfo("New image saved: Traffic light state 3. Next light is %d waypoints ahead"
                                   % (dist_next_light))
                         else:
-                            print("New image saved: Traffic light state %d at %d waypoints ahead" %
+                            rospy.loginfo("New image saved: Traffic light state %d at %d waypoints ahead" %
                                   (state_truth,dist_next_light))    
                         
-                        print("Total [%d,%d,%d,%d] saved this run" 
+                        rospy.loginfo("Total [%d,%d,%d,%d] saved this run" 
                               % (self.num_image_saved[0],self.num_image_saved[1],
                                  self.num_image_saved[2],self.num_image_saved[3]))
                         
