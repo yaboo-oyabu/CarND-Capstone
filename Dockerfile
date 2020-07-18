@@ -17,6 +17,7 @@ RUN apt-get upgrade -y
 
 # install python packages
 RUN apt-get install -y python-pip
+RUN pip install --upgrade pip
 COPY requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt
 
@@ -35,4 +36,3 @@ VOLUME ["/root/.ros/log/"]
 WORKDIR /capstone/ros
 
 RUN echo 'source /opt/ros/${ROS_DISTRO}/setup.bash' >> /root/.bashrc
-
