@@ -247,7 +247,12 @@ class TLDetector(object):
                                 
                         cv2.imwrite(SAVE_LOCATION+fname, cv_image)
                         self.num_image_saved[state_truth] += 1
-                        self.image_saver_cooldown = 5
+                        
+                        if state_truth == 1:
+                            #yellow is too rare - use less cooldown
+                            self.image_saver_cooldown = 1
+                        else:
+                            self.image_saver_cooldown = 5   
                                 
                         csv_file_name = SAVE_LOCATION+"sim_images.csv"
 
