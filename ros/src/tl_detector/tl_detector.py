@@ -16,6 +16,7 @@ from datetime import datetime
 import os
 
 STATE_COUNT_THRESHOLD = 3
+
 IMAGE_COUNT_THRESHOLD = 1
 
 # configuration for saving training data from simulator
@@ -76,7 +77,7 @@ class TLDetector(object):
         #    self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_real_extracted.h5')
         #else:
         #    self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_sim_extracted.h5')
-                     
+
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -190,7 +191,9 @@ class TLDetector(object):
             '''
             # Check if detects traffic lights
             result = self.light_classifier.get_classification(cv_image)
+
             self.last_detected_state = result
+
             # Reset image counter
             self.img_count = 0
 
