@@ -7,3 +7,4 @@ matplotlib
 pyyaml
 cython
 sklearn
+wget
