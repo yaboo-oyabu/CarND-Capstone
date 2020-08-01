@@ -42,8 +42,30 @@ class TLDetector(object):
         
         # for saving images
         self.num_image_saved = [0] * 4; # keep track of number of image stored for each light state (current run)
-        self.image_saver_cooldown = 0;
+        self.image_saver_cooldown = 0
 
+        config_string = rospy.get_param("/traffic_light_config")
+        self.config = yaml.load(config_string)
+        self.is_site = self.config["is_site"]
+
+        # Publisher for red light waypoint position
+        self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+        self.bridge = CvBridge()
+
+        # Define traffic light classifier with location of detection & classifier model
+        self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_mixed_extracted.h5')
+        self.listener = tf.TransformListener()
+
+        self.state = TrafficLight.UNKNOWN
+        self.last_state = TrafficLight.UNKNOWN
+        self.last_wp = -1
+        self.state_count = 0
+        self.last_detected_state = TrafficLight.UNKNOWN
+        
+        if SAVE_TRAINING_IMAGE:
+            if not os.path.exists(SAVE_LOCATION):
+                os.makedirs(SAVE_LOCATION)
+        
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
@@ -57,40 +79,6 @@ class TLDetector(object):
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
 
-        config_string = rospy.get_param("/traffic_light_config")
-        self.config = yaml.load(config_string)
-        
-        self.is_site = self.config["is_site"]
-
-        # Publisher for red light waypoint position
-        self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
-
-        self.bridge = CvBridge()
-
-        #self.light_classifier = TLClassifier('sim_raw.h5')
-
-        # Define traffic light classifier with location of detection & classifier model
-        
-        self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_mixed_extracted.h5')
-        
-        #if self.is_site:
-        #    self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_real_extracted.h5')
-        #else:
-        #    self.light_classifier = TLClassifier('./light_classification/tl_detection','tl_class_sim_extracted.h5')
-
-        self.listener = tf.TransformListener()
-
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
-
-        self.last_detected_state = TrafficLight.UNKNOWN
-        
-        if SAVE_TRAINING_IMAGE:
-            if not os.path.exists(SAVE_LOCATION):
-                os.makedirs(SAVE_LOCATION)
-        
         self.loop()
 
     def loop(self):
@@ -121,6 +109,9 @@ class TLDetector(object):
             msg (Image): image from car-mounted camera
 
         """
+        if self.waypoint_tree is None:
+            return
+
         self.has_image = True
         self.camera_image = msg
         light_wp, state = self.process_traffic_lights()

@@ -50,6 +50,9 @@ class WaypointUpdater(object):
         self.waypoints_2d = None
         self.waypoint_tree = None
 
+        self.waypoints_initialized = False
+        self.pose_initialized = False
+
         self.loop()
 
     def loop(self):
@@ -87,8 +90,9 @@ class WaypointUpdater(object):
 
     def publish_waypoints(self):
         """Publishes final waypoints for the car to follow"""
-        final_lane = self.generate_lane()
-        self.final_waypoints_pub.publish(final_lane)
+        if self.pose_initialized and self.waypoints_initialized:
+            final_lane = self.generate_lane()
+            self.final_waypoints_pub.publish(final_lane)
 
     def generate_lane(self):
         """Generates lane (slice of waypoints from base waypoints)
@@ -153,6 +157,7 @@ class WaypointUpdater(object):
     def pose_cb(self, msg):
         """Gets current pose of the vehicle"""
         self.pose = msg
+        self.pose_initialized = True
 
     def waypoints_cb(self, waypoints):
         """Stores base waypoints"""
@@ -160,6 +165,7 @@ class WaypointUpdater(object):
         if not self.waypoints_2d:
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in waypoints.waypoints]
             self.waypoint_tree = KDTree(self.waypoints_2d)
+        self.waypoints_initialized = True
 
     def traffic_cb(self, msg):
         """Callback for /traffic_waypoint message"""

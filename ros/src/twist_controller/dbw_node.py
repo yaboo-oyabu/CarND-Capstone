@@ -78,7 +78,8 @@ class DBWNode(object):
         self.angular_vel = None
 
         # Checks if dbw is enabled or not
-        self.dbw_enabled = None
+        # Note(Yaboo) This needs to be True because Capstone simulator doesn't send /dbw_enabled msg in evaluation.
+        self.dbw_enabled = True
 
         # Throttle, brake & steering values that should be published
         self.throttle = self.steering = self.brake = 0
